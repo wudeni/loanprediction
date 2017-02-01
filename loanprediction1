@@ -1,0 +1,141 @@
+import pandas as pd
+import numpy as np
+
+#read the csv data file and save in to a dataframe
+try:
+    df = pd.read_csv('train.csv', header=0)
+except:
+	print('File cannot opened:' ,)
+	exit()
+
+# get a glance at the data set
+df.info()
+df.desciribe()
+ 
+"""Creating function to find missing data"""
+def num_missing(x):
+    return sum(x.isnull())
+  
+def bining(col, cut_points, labels=None):
+    min_val = col.min()
+    max_val = col.max()
+    break_points = [min_val] + cut_points + [max_val]
+    if not labels:
+        labels = range(len(cut_points)+1)
+        
+    colBin = pd.cut(col, bins=break_points, labels=labels, include_lowest=True)
+    return colBin
+
+def percConvert(ser):
+  return ser/float(ser[-1])
+  
+    
+#Finding missing values in columns
+print ("Missing values per column:")
+print (df.apply(num_missing, axis=0))
+#axis=0 defines that function is to be applied on each column
+
+#Finding missing values in each rows
+print ("\nMissing values per row:")
+print (df.apply(num_missing, axis=1).head())
+axis=1 defines that function is to be applied on each row
+
+df.dtypes[df.dtypes.map(lambda x: x=='float')]
+df.dtypes[df.dtypes.map(lambda x: x=='object')]
+
+#convert 'object' in to numerical data
+df['PropertyArea'] = df['Property_Area'].map({'Urban':1, 'Rural':2, 'Semiurban':3})
+df['Degree'] = df['Education'].map({'Graduate': 1, 'Not Graduate':0})
+df['LoanStatus']=df['Loan_Status'].map({'Y':1, 'N':0}).astype(int)
+
+#Introduce new column
+df['TotIncome']=df.ApplicantIncome + df.CoapplicantIncome
+
+#Filling column 'Married' by finding the mode
+married_mode = df['Married'].mode()
+df['Marital_Status'] = df['Married']
+df.loc[(df.Married.isnull()), 'Marital_Status']= married_mode[0]
+df['MaritalStatus'] = df['Marital_Status'].map({'No':0, 'Yes':1}).astype(int)
+
+#Filling column 'Gender' by finding the mode by degree
+df['Gend']=df['Gender'].map({'Male':1,'Female':0})
+gend_mode = np.zeros((2,2))
+for i in range(0,2):
+    for j in range (0,2):
+        x = df[ (df.Gend == i) & (df.Degree == j)]['Gend'].mode()
+        gend_mode[i,j]= x[0]
+
+df['GenderFill'] = df['Gend']
+for i in range(0,2):
+    for j in range(0,2):
+        df.loc[(df.Gender.isnull()) & (df.Degree == j), 'GenderFill'] = gend_mode[i,j]
+
+#Filling column 'Seld_Employed' by finding the mode by gender and degree
+df['slfemp']=df['Self_Employed'].map({'No':1,'Yes':0})
+selfemp_mode = np.zeros((2,2))
+for i in range(0,2):
+    for j in range(0,2):
+       x = df[( df['GenderFill']==i) & (df['Degree'] == j)]['slfemp'].mode()
+       selfemp_mode[i,j] = x[0]
+
+df['Self_EmployedFill'] = df['slfemp']
+for i in range(0,2):
+    for j in range(0,2):
+       df.loc[ (df.slfemp.isnull()) & (df['GenderFill']==i) & (df['Degree'] == j) , 'Self_EmployedFill']=selfemp_mode[i,j]
+     
+#Filling column 'Dependents' by finding the mode by gender, marital status and property
+df['depen']=df['Dependents'].map({'0':0, '1': 1, '2':2, '3+':3})
+depen_mode = np.zeros((2,3,2))
+for i in range(0,2):
+    for j in range(0,3):
+        for k in range (0,2):
+            x = df[( df['GenderFill']==i) & (df['PropertyArea'] == j+1) & (df.MaritalStatus == k)]['depen'].mode()
+            depen_mode[i,j,k] = x[0]
+            
+df['DependentsFill'] = df['Dependents']
+
+for i in range(0,2):
+    for j in range(0,3):
+        for k in range(0,2):
+            df.loc[(df.Dependents.isnull()) & (df.GenderFill == i) & (df.PropertyArea == j+1) & (df.MaritalStatus == k), 'DependentsFill'] = depen_mode[i,j,k]
+
+#Filling column 'LoanAmount' by finding the median by degree, property area 
+df["LoanAmountFill"] = df["LoanAmount"]
+loanamt_median=np.zeros((2,3))
+for i in range(0,2):
+    for j in range(0,3):
+        loanamt_median[i,j]=df[ (df.Degree == i) & (df.PropertyArea == j+1)]['LoanAmount'].dropna().median()
+
+for i in range(0,2):
+    for j in range(0,3):
+        df.loc[ (df.LoanAmount.isnull()) & (df.Degree == i) & (df.PropertyArea == j+1),'LoanAmountFill'] = loanamt_median[i,j]
+
+#Filling column 'LoanAmountterm' by finding the median by self employed, property area 
+df["Loan_Amt_TermFill"] = df["Loan_Amount_Term"]
+laterm_mean=np.zeros((2,3))
+for i in range(0,2):
+    for j in range(0,3):
+        laterm_mean[i,j]=df[ (df.Self_EmployedFill == i) & (df.PropertyArea == j+1)]['Loan_Amount_Term'].dropna().mean()
+
+for i in range(0,2):
+    for j in range(0,3):
+        df.loc[ (df.Loan_Amount_Term.isnull()) & (df.Self_EmployedFill == i) & (df.PropertyArea == j+1),'Loan_Amt_TermFill'] = laterm_mean[i,j]
+
+
+#Filling column 'LoanAmountterm' by finding the median by self employed, property area 
+df["Credit_HistoryFill"] = df["Credit_History"]
+ch_mode = np.zeros((2,3))
+for i in range(0,2):
+    for j in range(0,3):
+        x = df[( df.GenderFill ==i) & (df.PropertyArea == j+1)]['Credit_History'].mode()
+        ch_mode[i,j] = x[0]
+
+for i in range(0,2):
+    for j in range(0,3):
+        df.loc[(df.Credit_History.isnull()) & (df.GenderFill == i) & (df.PropertyArea == j+1), 'Credit_HistoryFill'] = ch_mode[i,j]
+
+df=df.drop(['Credit_History','Loan_Amount_Term','LoanAmount','slfemp','depen','Dependents','Property_Area',
+'Gender', 'Gend','Married', 'Education', 'Self_Employed', 'Marital_Status','Loan_Status'], axis=1)               
+
+df.info()
+print (df.apply(num_missing, axis=0))
