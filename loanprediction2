@@ -1,0 +1,21 @@
+for i in range(0,2):
+    x=len(df[(df.Loan_Status==i)])
+    if i==0:
+        print('Total loan declines:', x)
+    else:
+        print('Total loan approvals:', x)
+        
+
+print('\nRelation with credit history')   
+for i in range(0,2):
+    x=len(df[(df.Credit_History==i)])
+    y=len(df[(df.Credit_History==i) & (df.Loan_Status ==1)])
+    if i==0:
+        print('Credit history guidelines do not meet: ', x)
+        print('Credit history guidelines do not meet but loan approved:', y)
+        print('Proportion Credit history guidelines do not meet & loan approved:', round((y/x), 2), '\n')
+    else:
+        print('Credit history guidelines meet: ', x)
+        print('Credit history guidelines meet & loan approved:', y)
+        print('Proportion Credit history guidelines meet & loan approved:', round((y/x), 2), '\n')
+        
