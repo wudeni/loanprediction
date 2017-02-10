@@ -1,0 +1,13 @@
+print('\nRelation with Gender')  
+for i in range(0,2):
+    x=len(df[(df.Sex==i)])
+    y=len(df[(df.Sex==i) & (df.Loan_Status ==1)])
+    if i==0:
+        print('Women apply: ', x)
+        print('Women get approval:', y)
+        print('Proportion of women get approval: ', round((y/x), 2), '\n')
+    else:
+        print('Men apply: ', x)
+        print('Men get approval:', y)
+        print('Proportion of men get approval: ', round((y/x), 2),'\n')
+        
