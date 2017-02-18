@@ -1,0 +1,9 @@
+
+"""correlation and covariance"""
+
+
+corr = df[['LoanAmountFill', 'TotIncome']].corr(method = 'pearson').as_matrix()[0][1]
+print ('correlation' , corr)
+
+cov = df[['LoanAmountFill', 'TotIncome']].cov().as_matrix()[0][1]
+print ('covariance', cov)
