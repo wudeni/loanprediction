@@ -7,3 +7,7 @@ print ('correlation' , corr)
 
 cov = df[['LoanAmountFill', 'TotIncome']].cov().as_matrix()[0][1]
 print ('covariance', cov)
+
+fig = plt.figure(1, figsize=(9,9))
+ax=fig.gca()
+df.plot(kind = 'scatter', x = 'LoanAmountFill', y='TotIncome', ax=ax)
